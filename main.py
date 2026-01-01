@@ -9,7 +9,7 @@ import Network
 
 Model = Network.ConvolutionalNerualNetwork()
 
-df = pd.read_csv('emnist-letters-train.csv') # accessing the csv
+df = pd.read_csv('trainA.csv') # accessing the csv
 td = df.to_numpy() #converting to numpy array
 
 rand = np.random.default_rng() 
@@ -25,6 +25,8 @@ epoch_size = 88799*0.98 # limit of the samples in epoch
 
 Loss_data = []
 Accuracy_data = []
+
+MomentumGradDesc = Network.MomentumGradientDescent(n=n,alpha=0.9 )
 
 
 
@@ -46,7 +48,7 @@ for i in range(epochs):
             lbl = td[count][0]-1
             Label[lbl][0] = 1
             O = Model.forwardPropogation(Input)
-            Loss = Network.SSR.SSR(O,Label)
+            Loss = Network.CrossEntropyLoss.CrossEntropyLoss(P=Label,Q=O,derivative=False)
             Losses+=Loss
             batch_loss +=Loss
             #accuracy update
@@ -63,7 +65,7 @@ for i in range(epochs):
             count+=1
             #print(Gradients)
             
-        Network.GradientUpdate(Gradients,Model , n/batch_size) # gradient descent by updating the model
+        MomentumGradDesc.update(Gradients,Model ,batch_size) # gradient descent by updating the model
         Gradients = None # resets gradients for next calculation in descent
         print(batch_loss/batch_size , f"--- count {count} ----epoch {i} --- batch_accuracy => {batch_acc/batch_size}" , np.argmax(O) , lbl)
         
@@ -74,3 +76,18 @@ for i in range(epochs):
     Accuracy_data.append(acc/epoch_size)
 print(Loss_data)
 print(Accuracy_data)
+
+Params = {}
+
+Params["W3"] = Model.l3.Weight 
+Params["B3"] =Model.l3.Bias 
+Params["W2"] =Model.l2.Weight 
+Params["B2"] =Model.l2.Bias 
+Params["W1"] =Model.l1.Weight 
+Params["B2"] =Model.l1.Bias 
+Params["F2"] =Model.cv2.kernel 
+Params["FB2"] =Model.cv2.Bias
+Params["F1"] =Model.cv1.kernel 
+Params["FB1"] =Model.cv1.Bias
+
+np.save("Params2.npy",Params)

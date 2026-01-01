@@ -210,6 +210,50 @@ def GradientUpdate(Gradients,Model:ConvolutionalNerualNetwork,n):
     Model.cv1.kernel -= n*Gradients["F1"]
     Model.cv1.Bias -= n*Gradients["FB1"]
 
+class MomentumGradientDescent:
+    def __init__(self,n,alpha,):
+        self.n = n
+        self.alpha = alpha
+        self.deltas = {
+            "W3":0,
+            "B3":0,
+            "W2":0,
+            "B2":0,
+            "W1":0,
+            "B1":0,
+            "F2":0,
+            "FB2":0,
+            "F1":0,
+            "FB1":0,
+            
+        }
+        
+
+    def update(self,Gradients,Model:ConvolutionalNerualNetwork,batch_sz):
+
+        self.deltas["W3"] = (self.alpha*self.deltas["W3"]) -  (self.n/batch_sz)*Gradients["W3"]
+        self.deltas["B3"] = (self.alpha*self.deltas["B3"]) -  (self.n/batch_sz)*Gradients["B3"] 
+        self.deltas["W2"] = (self.alpha*self.deltas["W2"]) -  (self.n/batch_sz)*Gradients["W2"]
+        self.deltas["B2"] = (self.alpha*self.deltas["B2"]) -  (self.n/batch_sz)*Gradients["B2"] 
+        self.deltas["W1"] = (self.alpha*self.deltas["W1"]) -  (self.n/batch_sz)*Gradients["W1"]
+        self.deltas["B1"] = (self.alpha*self.deltas["B1"]) -  (self.n/batch_sz)*Gradients["B1"] 
+        self.deltas["F2"] = (self.alpha*self.deltas["F2"]) -  (self.n/batch_sz)*Gradients["F2"]
+        self.deltas["FB2"] = (self.alpha*self.deltas["FB2"]) -  (self.n/batch_sz)*Gradients["FB2"] 
+        self.deltas["F1"] = (self.alpha*self.deltas["F1"]) -  (self.n/batch_sz)*Gradients["F1"]
+        self.deltas["FB1"] = (self.alpha*self.deltas["FB1"]) -  (self.n/batch_sz)*Gradients["FB1"] 
+
+        Model.l3.Weight  += self.deltas["W3"]
+        Model.l3.Bias    += self.deltas["B3"]
+        Model.l2.Weight  += self.deltas["W2"]
+        Model.l2.Bias    += self.deltas["B2"]
+        Model.l1.Weight  += self.deltas["W1"]
+        Model.l1.Bias    += self.deltas["B1"]
+        Model.cv2.kernel += self.deltas["F2"] 
+        Model.cv2.Bias   += self.deltas["FB2"] 
+        Model.cv1.kernel += self.deltas["F1"]
+        Model.cv1.Bias   += self.deltas["FB1"]
+
+
 def SumGradients(Gradients , OldGrad):
     # manually summing the gradients for the minibatches
      OldGrad["W3"] +=  Gradients["W3"]
