@@ -2,36 +2,26 @@ import numpy as np
 import scipy as sc
 
 
-
-
-
-
-        
-
-    
-    
-
-        
-
 class ConvolutionalLayer:
     def __init__(self,kernelDimension):
         self.kernelDimension = kernelDimension # size of kernel filter for convolution
         self.stride     = 0          # for Future Use
-        self.kernel = np.random.normal(loc = 0 , scale = 1e-4 , size = (self.kernelDimension,self.kernelDimension))
-    
+        self.kernel = np.random.normal(loc = 0 , scale = 1e-1 , size = (self.kernelDimension,self.kernelDimension))
+        self.Bias = 0
     def forward(self,X):
         self.A = X
-        self.Out = sc.signal.correlate2d(X, self.kernel, mode='valid')
+        self.Out = sc.signal.correlate2d(X, self.kernel, mode='valid')+ (np.ones((X.shape[0] -  self.kernelDimension +1, X.shape[1] -  self.kernelDimension +1))*self.Bias)
         return self.Out
     def backward(self,S):
         self.S = S
+        self.dC_dB = np.sum(self.S)
         self.dC_dF = sc.signal.correlate2d(self.A, self.S, mode='valid')
         
 class LinearLayer:
     def __init__(self,InDim,OutDim):
         self.WeightDimension = (OutDim,InDim)
         self.BiasDimension =   OutDim
-        self.Weight = np.random.normal(loc = 0 , scale = 1e-4 , size = self.WeightDimension )
+        self.Weight = np.random.normal(loc = 0 , scale = 2/InDim , size = self.WeightDimension )
         self.Bias = np.zeros(shape = (self.BiasDimension,1))
     def forward(self,X):
         self.A = X
@@ -58,7 +48,11 @@ class Activation:
             return Y
         Y[Y<0] = 0
         return Y
-
+    @staticmethod
+    def softmax(X, derivative = False):
+        if derivative == True:
+            return np.diag(X.T[0])- X@X.T
+        return np.exp(X) / np.sum(np.exp(X))
 
 
 
@@ -69,6 +63,16 @@ class SSR:
         if derivative == True:
             return 2*(O - X)
         return np.linalg.norm(O-X)**2
+
+
+class CrossEntropyLoss:
+    @staticmethod
+    def CrossEntropyLoss(P,Q,derivative = False):
+        if derivative == True:
+            return Q-P
+        return -1*np.dot(P.reshape(-1),np.log(Q).reshape(-1))
+
+
 
 class MaxPool:
     def __init__(self,kernelDimension):
@@ -138,7 +142,7 @@ class ConvolutionalNerualNetwork():
         self.A4 = Activation.ReLU(self.Z4)
 
         self.Z5 =  self.l3.forward(self.A4)
-        self.A5 = Activation.ReLU(self.Z5)
+        self.A5 = Activation.softmax(self.Z5)
 
 
         return self.A5
@@ -148,9 +152,13 @@ def BackProp(Model: ConvolutionalNerualNetwork,Input,Label,): # manual Back Prop
     Gradients = {}
 
 
-    dL_dA5 = SSR.SSR(O=Model.A5,X=Label,derivative=True)
-    dA5_dZ5 = Activation.ReLU(X=Model.Z5,derivative=True)
-    S5 = np.multiply(dL_dA5,dA5_dZ5)
+    #dL_dA5 = SSR.SSR(O=Model.A5,X=Label,derivative=True) # using  Sum of Squared Residuals
+    #dA5_dZ5 = Activation.ReLU(X=Model.Z5,derivative=True)
+    #S5 = np.multiply(dL_dA5,dA5_dZ5)
+    #using CrossEntropyLoss
+    S5= CrossEntropyLoss.CrossEntropyLoss(P=Label,Q=Model.A5 ,derivative=True)
+
+    
 
     Model.l3.backward(S5)
     Gradients["W3"] = Model.l3.dC_dW 
@@ -179,12 +187,14 @@ def BackProp(Model: ConvolutionalNerualNetwork,Input,Label,): # manual Back Prop
 
     Model.cv2.backward(S2)
     Gradients["F2"] = Model.cv2.dC_dF
+    Gradients["FB2"] = Model.cv2.dC_dB
     dL_dP1 = sc.signal.correlate2d(S2, Model.cv2.kernel, mode='full')
     dL_dA1 = Model.pl1.backward(dL_dP1)
     dA1_dZ1 = Activation.ReLU(X=Model.Z1,derivative=True)
     S1 = np.multiply(dL_dA1,dA1_dZ1)
     Model.cv1.backward(S1)
     Gradients["F1"] = Model.cv1.dC_dF
+    Gradients["FB1"] = Model.cv1.dC_dB
     return Gradients
 
 def GradientUpdate(Gradients,Model:ConvolutionalNerualNetwork,n):
@@ -196,7 +206,9 @@ def GradientUpdate(Gradients,Model:ConvolutionalNerualNetwork,n):
     Model.l1.Weight -= n*Gradients["W1"]
     Model.l1.Bias -= n*Gradients["B1"]
     Model.cv2.kernel -= n*Gradients["F2"]
+    Model.cv2.Bias -= n*Gradients["FB2"]
     Model.cv1.kernel -= n*Gradients["F1"]
+    Model.cv1.Bias -= n*Gradients["FB1"]
 
 def SumGradients(Gradients , OldGrad):
     # manually summing the gradients for the minibatches
@@ -207,7 +219,9 @@ def SumGradients(Gradients , OldGrad):
      OldGrad["W1"] +=  Gradients["W1"]
      OldGrad["B1"] +=  Gradients["B1"]
      OldGrad["F2"] +=  Gradients["F2"]
+     OldGrad["FB2"] +=  Gradients["FB2"]
      OldGrad["F1"] +=  Gradients["F1"]
+     OldGrad["FB1"] +=  Gradients["FB1"]
 
      return OldGrad
 
