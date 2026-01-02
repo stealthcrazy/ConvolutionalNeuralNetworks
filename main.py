@@ -11,22 +11,25 @@ Model = Network.ConvolutionalNerualNetwork()
 
 df = pd.read_csv('trainA.csv') # accessing the csv
 td = df.to_numpy() #converting to numpy array
+tds = td.shape
+print(tds)
 
 rand = np.random.default_rng() 
 Model = Network.ConvolutionalNerualNetwork()
 
 
-n = 0.1  #learning rate or step size for gradient descent
+
+n = 0.01  #learning rate or step size for gradient descent
 Gradients = None
 count = 1
-batch_size = 128 #batch size for mini batch for gradient descent
-epochs = 20# epochs
-epoch_size = 88799*0.98 # limit of the samples in epoch
+batch_size = 256 #batch size for mini batch for gradient descent
+epochs = 10# epochs
+epoch_size = tds[0]*0.98 # limit of the samples in epoch
+
+MomentumGradDesc = Network.MomentumGradientDescent(n=n,alpha=0.9 )
 
 Loss_data = []
 Accuracy_data = []
-
-MomentumGradDesc = Network.MomentumGradientDescent(n=n,alpha=0.9 )
 
 
 
@@ -43,7 +46,7 @@ for i in range(epochs):
         batch_acc = 0
         batch_loss = 0
         for k in range(batch_size):
-            Input = np.rot90(np.flip(td[count][1:].reshape(28,28),1)) 
+            Input = td[count][1:].reshape(28,28)
             Label = np.zeros((26,1))
             lbl = td[count][0]-1
             Label[lbl][0] = 1
