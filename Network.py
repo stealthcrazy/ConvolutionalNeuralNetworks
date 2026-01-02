@@ -21,7 +21,7 @@ class LinearLayer:
     def __init__(self,InDim,OutDim):
         self.WeightDimension = (OutDim,InDim)
         self.BiasDimension =   OutDim
-        self.Weight = np.random.normal(loc = 0 , scale = 2/InDim , size = self.WeightDimension )
+        self.Weight = np.random.normal(loc = 0 , scale = (2/InDim)**0.5 , size = self.WeightDimension )
         self.Bias = np.zeros(shape = (self.BiasDimension,1))
     def forward(self,X):
         self.A = X
@@ -50,8 +50,11 @@ class Activation:
         return Y
     @staticmethod
     def softmax(X, derivative = False):
+        
         if derivative == True:
             return np.diag(X.T[0])- X@X.T
+        
+        X = X - np.max(X) # prevents overflow
         return np.exp(X) / np.sum(np.exp(X))
 
 
@@ -70,6 +73,7 @@ class CrossEntropyLoss:
     def CrossEntropyLoss(P,Q,derivative = False):
         if derivative == True:
             return Q-P
+        Q = np.clip(Q,1e-10,(1-1e-10)) # clipping to prevent to small probability values
         return -1*np.dot(P.reshape(-1),np.log(Q).reshape(-1))
 
 

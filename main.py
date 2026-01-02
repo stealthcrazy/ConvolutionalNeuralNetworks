@@ -22,11 +22,11 @@ Model = Network.ConvolutionalNerualNetwork()
 n = 0.01  #learning rate or step size for gradient descent
 Gradients = None
 count = 1
-batch_size = 256 #batch size for mini batch for gradient descent
+batch_size = 128 #batch size for mini batch for gradient descent
 epochs = 10# epochs
 epoch_size = tds[0]*0.98 # limit of the samples in epoch
 
-MomentumGradDesc = Network.MomentumGradientDescent(n=n,alpha=0.9 )
+MomentumGradDesc = Network.MomentumGradientDescent(n=n,alpha=0.90 )
 
 Loss_data = []
 Accuracy_data = []
@@ -46,7 +46,7 @@ for i in range(epochs):
         batch_acc = 0
         batch_loss = 0
         for k in range(batch_size):
-            Input = td[count][1:].reshape(28,28)
+            Input = td[count][1:].reshape(28,28)/255.0 # normalisation
             Label = np.zeros((26,1))
             lbl = td[count][0]-1
             Label[lbl][0] = 1
@@ -87,7 +87,7 @@ Params["B3"] =Model.l3.Bias
 Params["W2"] =Model.l2.Weight 
 Params["B2"] =Model.l2.Bias 
 Params["W1"] =Model.l1.Weight 
-Params["B2"] =Model.l1.Bias 
+Params["B1"] =Model.l1.Bias 
 Params["F2"] =Model.cv2.kernel 
 Params["FB2"] =Model.cv2.Bias
 Params["F1"] =Model.cv1.kernel 
